@@ -1,0 +1,531 @@
+---
+title: "Introduction to the Statistical Analysis of Bat Survey Data"
+author: "Steve Markham"
+date: "13 September 2014"
+output:
+  html_document:
+    theme: united
+    toc: yes
+  pdf_document:
+    toc: yes
+  word_document: default
+bibliography: References.bib
+---
+
+
+
+# Introduction
+
+This document gives an introduction to the statistical analysis of bat survey data. Statistical analysis is a key aid to decision making; here it is used to show how individual bat species and the assemblage of bats (i.e. all species) use the landscape, for example:  
+
+* It demonstrates that a bat species activity level, between two locations, is different, and that this difference is not _random_ but is a _significant_ difference.
+
+* It illustrates that the assemblage of bats is dissimilar over time (e.g. between September and August) and that this dissimilarity is not _random_ but is a _significant_ difference.
+
+Statistical analysis can provide a robust interpretation of the survey results. From the interpretation of the results conclusions can be drawn and reported on; these conclusions can then be defended with confidence.
+
+The data analysis was undertaken in R, see [@R-core]. This document is in R Markdown V2 format. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>. This document can be complied through R-Studio [^2] with __knitr__ [@R-knitr]. The graphs were produced in ggplot, see [@R-ggplot2].  The R software and associated packages (e.g. knitr and ggplot) are all distributed under the terms of the GNU General Public License, either Version 2, June 1991 or Version 3, June 2007, see http://www.R-project.org/Licenses/. 
+
+The R-script applied in the analysis is shown in shaded boxes as illustrated in the one below.  This shaded box shows the R-script to return the version of R used; the version number and date is printed below the shaded box. 
+
+```{r}
+#Libraries used
+library(ggplot2)
+library(reshape2)
+library(RColorBrewer)
+library(knitr)
+library(vegan)
+library(nortest)
+
+
+#R script to print the version of R used
+version$version.string
+
+```
+
+
+# Turbine and Hedge Surveys
+
+Bat surveys where designed and undertaken by Katrena Stanhope of Atkins [^1] for PfR [^3] on a proposed windfarm in SW England during the months of August and September.  
+
+Four automatic bat detectors (SM2s) were placed for 5 nights in August and September at the locations shown in the Table and Figure below.
+
+
+## Table of bat detector locations
+
+Bat Detector  | Height | Location
+------------- | -------| ------
+SM2 - A  | 10.0 metres | Turbine
+SM2 - B  | 1.5 metres | Turbine
+SM2 - C  | 1.5 metres | Hedge
+SM2 - D  | 10.0 metres | Hedge
+
+
+## Location of Bat Detectors
+
+
+<img src="Schematic.png">
+
+
+The automatic detector survey  measured an index of bat activity (i.e. the number of bat passes per night); the criteria of  a bat pass is not important here; as long as all four location use the same method for determining a bat pass.  
+
+The text and graphs below describe a simple approach to undertaking statistical analysis of bat survey data [i.e. the number of bat passes recorded over a set period for individual bat species or groups of species].  
+
+__Assumptions__  
+1. The four bat detectors are considered equal in their ability to detect bats.  
+2. Bat species are equally likely to be detected at a given distance; e.g. loud bats such as the Noctule and quiet bats such as the Brown long-eared.  
+3. Identification of bats using sound analysis is correct.  
+4.  The __null hypothesis__ will be rejected when the p-value turns out to be less than 0.05 (5%).  
+
+## Load Data
+
+```{r}
+## R scrpit that loads the data from the text file "BatSurveyData"
+Batdata<-read.table("WindFarmData.txt", header=T)
+```
+
+
+Attaching names from headers and listing data that can than be used in the analysis
+
+```{r echo=FALSE}
+attach(Batdata)
+names(Batdata)
+
+```
+
+
+## Check data is there
+
+First ten of `r nrow(Batdata)` lines and nine of `r ncol(Batdata)` of columns
+
+```{r echo=FALSE}
+DataLook <-Batdata[1:10,1:6]
+DataLook
+
+##DataLook2 <-Batdata[1:10,7:10]
+##DataLook2
+##DataLook3 <-Batdata[1:10,11:14]
+##DataLook3
+```
+
+# Presentation Plot of All Bat Data
+
+```{r echo=FALSE, include=FALSE, eval=TRUE, warning=FALSE}
+#Make data a list so can be plotted in ggplot2
+plotdata<- melt(Batdata)
+```
+
+
+```{r echo=FALSE, warning=FALSE}
+
+
+#Add Collision Risk
+
+plotdata$Collision.Risk <- ifelse(plotdata$variable == "Common.Pipistrelle","Medium",
+                           ifelse(plotdata$variable == "Soprano.Pipistrelle","Medium",
+                           ifelse(plotdata$variable == "Noctule", "High",
+                           ifelse(plotdata$variable == "Leislers", "High", 
+                           ifelse(plotdata$variable == "Leisler.or.Serotine", "High", 
+                           ifelse(plotdata$variable == "Lesser.Horseshoe", "Low", 
+                           ifelse(plotdata$variable == "Greater.Horseshoe", "Low", 
+                           ifelse(plotdata$variable == "Brown.Long.eared", "Low", 
+                           ifelse(plotdata$variable == "Barbastelle", "Medium", "error"
+                                  )))))))))
+#Make bat species graph in order
+plotdata$variable<-ordered(plotdata$variable, levels=c("Lesser.Horseshoe", "Greater.Horseshoe", "Brown.Long.eared", "Soprano.Pipistrelle", "Common.Pipistrelle", "Barbastelle", "Leisler.or.Serotine", "Leislers", "Noctule"))
+
+#Make Collision Risk an ordered factor - so it will graph in sequence
+plotdata$Collision.Risk<-ordered(plotdata$Collision.Risk, levels=c("High", "Medium", "Low"))
+
+#Presentation Plot ggplot2
+ggplot(plotdata, aes(x=variable, y=value, fill=Collision.Risk)) + 
+  geom_boxplot(notch=FALSE) +
+  coord_flip() +
+  facet_grid(~Month) +
+  ylab("Bat passes per hour") +
+  scale_y_continuous(trans="log10") +
+  scale_fill_brewer(palette="Set1") +
+  theme (legend.position="bottom") +
+  theme (axis.title.y=element_blank()) +
+  theme (axis.title.x=element_text(face="italic", colour="black", size=rel(0.75))) +
+  theme (axis.text.y=element_text(face="italic", colour="black", size=rel(0.75)))+
+  theme (axis.text.x=element_text(colour="gray50", size=rel(0.75)))+
+  theme (strip.text=element_text(face="bold", size=rel(0.75))) +
+  theme (strip.background = element_rect(fill="gray95", colour ="black", size=0.75))+
+  theme (panel.background = element_rect(fill=NA, colour="gray50")) +
+  theme (panel.grid.major = element_line(linetype="dotted", colour="black"))
+
+```
+
+The Collision Risk assessment is based on Natural England' Technical Information Note TIN051 [@TIN051].
+
+# Is the Data Normal?
+
+Normality is tested using the Anderson-Darling statistic if the data is normal then __Parametric__ analysis can be applied, if not then __Non-Parametric__  analysis should be used:
+
+**Common.Pipistrelle** data has a P-value of `r ad.test(Batdata$Common.Pipistrelle)$p.value`; less than 0.05, therefore data is not normal
+
+**Soprano.Pipistrelle** data has a P-value of `r ad.test(Batdata$Soprano.Pipistrelle)$p.value`; less than 0.05, therefore data is not normal
+
+**Noctule** data has a P-value of `r ad.test(Batdata$Noctule)$p.value`; less than 0.05, therefore data is not normal
+
+**Barbastelle** data has a P-value of `r ad.test(Batdata$Barbastelle)$p.value`; less than 0.05, therefore data is not normal
+
+The following analysis is **Non-Parametric**
+
+
+## Plots showing data's non-normality
+
+**Q-Q plots**; Data is considered  **normal** if the dots fall on the red line
+
+```{r echo=FALSE}
+par(mfrow=c(2,2))
+qqnorm(Batdata$Common.Pipistrelle, main="Common Pipistrelle")
+qqline(Batdata$Common.Pipistrelle, col="red")
+
+qqnorm(Batdata$Soprano.Pipistrelle, main="Soprano Pipistrelle")
+qqline(Batdata$Soprano.Pipistrelle, col="red")
+
+qqnorm(Batdata$Noctule, main="Noctule")
+qqline(Batdata$Noctule, col="red")
+
+qqnorm(Batdata$Barbastelle, main="Barbastelle")
+qqline(Batdata$Barbastelle, col="red")
+par(mfrow=c(1,1))
+```
+
+**Density plots**; Data is considered  **normal** if the density line follows a bell curve
+
+```{r echo=FALSE}
+
+par(mfrow=c(2,2))
+d<- density(Batdata$Common.Pipistrelle)
+plot(d, main = "Common Pipistrelle")
+polygon(d, col="red", border="blue")
+rug(Batdata$Common.Pipistrelle, col="brown")
+
+d<- density(Batdata$Soprano.Pipistrelle)
+plot(d, main = "Soprano Pipistrelle")
+polygon(d, col="red", border="blue")
+rug(Batdata$Soprano.Pipistrelle, col="brown")
+
+d<- density(Batdata$Noctule)
+plot(d, main = "Noctule")
+polygon(d, col="red", border="blue")
+rug(Batdata$Noctule, col="brown")
+
+d<- density(Batdata$Barbastelle)
+plot(d, main = "Barbastelle")
+polygon(d, col="red", border="blue")
+rug(Batdata$Barbastelle, col="brown")
+
+par(mfrow=c(1,1))
+
+
+```
+
+Example of a **Normal Distribution**; density line follows follows the classic a bell curve
+
+```{r echo=FALSE}
+x <- pretty(c(-3,3), 30)
+y <- dnorm(x)
+plot(x, y,
+     type = "l",
+     xlab = "Normal Deviate",
+     ylab= "Density",
+     yaxs = "i"
+     )
+polygon(x, y, col="red", border="blue")
+
+
+```
+
+
+
+# Non- Parametric Data Analysis
+
+## Mann Whitney U-test
+
+The Mann-Whitney U-test is a non-parametric technique for comparing the medians of two unmatched samples. It may be used with as few as four observations in each sample. Because the values of observations are converted to their _ranks_, the test may be applied to a wide range of variables (e.g. ordinal or interval scales). The test is also distribution-free, it is suitable for data which is not normally distributed, for example the counts of bats above. Sample size can be unequal.
+
+## Kruskal-Wallis rank sum test
+
+The Kruskal-Wallis rank sum test is a simple non-parametric test to compare the medians of three or more samples 
+
+## Boxplot of Soprano Pipistrelle Activity at the Hedge and Turbine
+
+```{r echo=FALSE}
+ggplot(Batdata, aes(x=factor(Habitat), y=Soprano.Pipistrelle)) + geom_boxplot() + ggtitle("Soprano Pistrelle Passes per day\nTurbine & Hedge locations")
+```
+
+```{r echo=FALSE}
+
+Hedgedata <- Batdata[Habitat=="Hedge",]
+Turbinedata <- Batdata[Habitat=="Turbine",]
+
+```
+
+## Mann Whitney U-test Hedge and Turbine: Soprano Pipistrelle
+
+
+Hedge and Turbine Soprano Pipistrelle activity
+
+Is the  Hedge and Turbine activity for the Soprano Pipistrelle the same?
+
+* __Null hypothesis:__ Hedge and Turbine Soprano Pipistrelle activity (as measured by passes per day) come from distributions with the same median.  
+* __Alternative hypothesis:__ Hedge and Turbine Soprano Pipistrelle activity  come from distributions with a different median.  
+
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+## In R the Mann Whitney U-test is performed by the "wilcox.test" function
+wilcox.test(Hedgedata$Soprano.Pipistrelle, Turbinedata$Soprano.Pipistrelle, correct=FALSE)
+
+```
+
+The resulting p-value of `r wilcox.test(Hedgedata$Soprano.Pipistrelle, Turbinedata$Soprano.Pipistrelle, correct=FALSE)$p.value` (<0.05) tells  you to __reject__ the null hypothesis: i.e. Hedge and Turbine __do not__ have similar levels of Soprano Pipistrelle activity.  
+
+
+
+## Boxplot of Noctule Activity at the Hedge and Turbine
+
+
+```{r echo=FALSE}
+ggplot(Batdata, aes(x=factor(Habitat), y=Noctule)) + geom_boxplot() + ggtitle("Noctule Passes per day\nTurbine & Hedge locations")
+```
+
+
+## Mann Whitney U-test Hedge and Turbine: Noctule
+
+Is the  Hedge and Turbine activity for the Noctule the same?  
+
+* __Null hypothesis:__ Hedge and Turbine Noctule activity come from distributions with the same median.  
+* __Alternative hypothesis:__ Hedge and Turbine Noctule activity come from distributions with a different median.  
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+## In R the Mann Whitney U-test is performed by the "wilcox.test" function
+wilcox.test(Hedgedata$Noctule, Turbinedata$Noctule, correct=FALSE)
+
+```
+
+
+The resulting p-value of `r wilcox.test(Hedgedata$Noctule, Turbinedata$Noctule, correct=FALSE)$p.value` (>0.05) says  you __cannot reject__ the null hypothesis: i.e. Hedge and Turbine __do__ have similar levels of Noctule activity.
+
+
+## Boxplot of Common Pipistrelle Activity for August and September
+
+
+```{r echo=FALSE}
+ggplot(Batdata, aes(x=factor(Month), y=Common.Pipistrelle)) + geom_boxplot() + ggtitle("Common Pipistrelle Passes per day\nAll locations") +coord_cartesian(ylim =c(0,100))
+```
+
+```{r echo=FALSE}
+
+Augustdata <- Batdata[Month=="Aug",]
+Septemberdata <- Batdata[Month=="Sept",]
+
+```
+
+
+## Mann Whitney U-test August and September
+
+Is the August and September Common Pipistrelle activity the same?  
+
+* __Null hypothesis:__  August and September Common Pipistrelle activity come from distributions with the same median.
+* __Alternative hypothesis:__ August and September Common Pipistrelle activity come from distributions with a different median.
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+## In R the Mann Whitney U-test is performed by the "wilcox.test" function
+wilcox.test(Augustdata$Common.Pipistrelle, Septemberdata$Common.Pipistrelle, correct=FALSE)
+```
+
+The resulting p-value of `r wilcox.test(Augustdata$Common.Pipistrelle, Septemberdata$Common.Pipistrelle, correct=FALSE)$p.value` (<0.05) tells  you to __reject__ the null hypothesis: i.e. Hedge and Turbine __do not__ have similar levels of Common Pipistrelle activity.
+
+
+## Boxplot of Noctule Activity at the Four Detector Locations
+
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(Batdata, aes(x=factor(Location), y=Noctule)) + geom_boxplot(aes(fill=factor(Location))) + ggtitle("Box Plot showing Noctule passes per day\nat locations") + theme(legend.position="none")
+```
+
+## Kruskal-Wallis rank sum test: Noctule
+
+Is the Noctule activity at the four locations the same? 
+
+* __Null hypothesis:__ all four locations come from distributions with the same median.
+* __Alternative hypothesis:__ all four locations come from distributions with a different median.
+
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+## In R the Kruskal-Wallis rank sum test is performed by the "kruskal.test" function
+kruskal.test(Noctule~Location, data=Batdata)
+```
+
+The resulting p-value of `r kruskal.test(Noctule~Location, data=Batdata)$p.value` (>0.05) says  you __cannot reject__ the null hypothesis: i.e. the four locations __do__ have similar levels of Noctule activity.
+
+
+
+
+## Boxplot of Common Pipistrelle Activity at the Four Detector Locations
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(Batdata, aes(x=factor(Location), y=Common.Pipistrelle)) + geom_boxplot(aes(fill=factor(Location))) + ggtitle("Box Plot showing Common Pipistrelle passes per day\nat locations") + theme(legend.position="none") + scale_y_log10()
+```
+
+
+## Kruskal-Wallis rank sum test: Common Pipistrelle
+
+Is the Common Pipistrelle activity at the four locations the same? 
+
+* __Null hypothesis:__ all four locations come from distributions with the same median..
+* __Alternative hypothesis:__ all four locations come from distributions with a different median..
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+## In R the Kruskal-Wallis rank sum test is performed by the "kruskal.test" function
+kruskal.test(Common.Pipistrelle~Location, data=Batdata)
+```
+
+The resulting p-value of `r kruskal.test(Common.Pipistrelle~Location, data=Batdata)$p.value` (<0.05) tells  you to __reject__ the null hypothesis: i.e. the four locations __do not__ have similar levels of Common Pipistrelle activity.
+
+## Summary of Non-Parametric Analysis
+
+What can be concluded from these boxplots and statistical tests of bat activity?
+
+* Noctule activity is the same between the the hedge/ turbine and at 10 metres/1.5 metres; Noctule has a high collision risk.  
+* Common and Soprano bat activity is significantly greater at the hedge.  
+
+
+
+__But how can the assemblage of bats be investigated (i.e. all species at various locations and over time)?__
+
+# Multivariate Analysis
+
+```{r echo=FALSE, include=FALSE}
+#Use forth root and set autotransform = FALSE
+Assem.Bats <- (Batdata[,6:14])^(1/4)
+Assem.Env <- Batdata[,1:5]
+
+# NMDS with bray-curtis distance
+nmds <- metaMDS(Assem.Bats, autotransform = FALSE, "bray", 2)
+
+```
+
+Analyzing the assemblage of Bats can be undertaken using _multivariate statistical techniques_; two approaches are demonstrated below *Non-metric Multidimensional Scaling* (MDS) and *ANalysis Of SIMilarities* (ANOSIM).
+
+## Non-metric Multidimensional Scaling
+
+Non-metric Multidimensional Scaling; MDS is a visualization technique.  The purpose of MDS can be simply stated: it constructs a *map* or __configuration__ of the samples (i.e. the bats passes per period of time; for a given species; and, location), in a specified number of dimensions which attempts to satisfy all the conditions imposed by the rank (dis)similarity matrix, e.g. if sample 1 has higher similarity to sample 2 than does to sample 3 then sample 1 will be placed closer on the map to sample 2 than it is to sample 3.
+
+### MDS Plot 1: Location as a Factor
+
+```{r echo=FALSE}
+# vector holding the colors
+cols <- c("red", "blue", "pink", "green")
+
+# empty plot
+plot(nmds, type = "n")
+
+# Add points colored by Environmental Variable Management
+points(nmds, col = cols[Assem.Env$Location], pch = 16)
+
+# add legend
+legend("topright", legend=levels(Assem.Env$Location), col=cols, pch = 16)
+
+```
+
+This plot shows some similarity in the assemblage of bats recorded on the west hedge at 1.5 metres; this group of records also appears dissimilar to the other three locations (1.5m.turbine, 10m.hedge.north & 10m.turbine)
+
+### MDS Plot 2: Habitat as a Factor
+
+```{r echo=FALSE}
+# vector holding the colors
+cols <- c("red", "blue")
+
+# empty plot
+plot(nmds, type = "n")
+
+# Add points colored by Environmental Variable Management
+points(nmds, col = cols[Assem.Env$Habitat], pch = 16)
+
+# add legend
+legend("topright", legend=levels(Assem.Env$Habitat), col=cols, pch = 16)
+
+```
+
+
+### MDS Plot 3: Month as a Factor
+
+```{r echo=FALSE}
+# vector holding the colors
+cols <- c("green", "orange")
+
+# empty plot
+plot(nmds, type = "n")
+
+# Add points colored by Environmental Variable Management
+points(nmds, col = cols[Assem.Env$Month], pch = 16)
+
+# add legend
+legend("topright", legend=levels(Assem.Env$Month), col=cols, pch = 16)
+
+```
+
+## Analysis of similarities (ANOSIM)
+
+MDS is a visualization technique however, analysis of similarities (ANOSIM) provides a way to test statistically whether there is a significant difference between two or more factor levels.
+
+### Similarity and Dissimilarity of Bat Assemblage between Months
+
+```{r}
+Assem.Dist <- vegdist(Assem.Bats, method="bray")
+attach(Assem.Env)
+Assem.ano <- anosim(Assem.Dist, Month, permutations = 9999)
+summary(Assem.ano)
+plot(Assem.ano)
+
+```
+
+
+### Similarity and Dissimilarity of Bat Assemblage between Hedge and Turbine
+
+```{r}
+Assem.ano <- anosim(Assem.Dist, Habitat, permutations = 9999)
+summary(Assem.ano)
+plot(Assem.ano)
+
+```
+
+### Similarity and Dissimilarity of Bat Assemblage between Detector Location
+
+```{r}
+par(mar = c(2.5, 1, 0.1, 0.1))
+Assem.ano <- anosim(Assem.Dist, Location, permutations = 9999)
+summary(Assem.ano)
+plot(Assem.ano)
+
+```
+
+
+
+# Printout of Data Used
+
+```{r echo=FALSE}
+
+DataLook <-Batdata[,1:6]
+DataLook
+DataLook2 <-Batdata[,7:10]
+DataLook2
+DataLook3 <-Batdata[,11:14]
+DataLook3
+
+```
+
+
+# References
+
+
+
+
+[^1]: Web <http://www.atkinsglobal.com/>
+[^2]: Available from <http://http://www.rstudio.org/>
+[^3]: Web <http://www.pfr.co.uk/>
