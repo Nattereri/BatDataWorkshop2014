@@ -1,0 +1,86 @@
+\documentclass[11pt,oneside]{article}
+\usepackage[a4paper,margin=3cm,footskip=.5cm]{geometry}
+\usepackage[sc]{mathpazo}
+\linespread{1.05}         % Palatino needs more leading (space between lines)
+\usepackage[T1]{fontenc}
+\usepackage{lastpage}
+\usepackage[toc,page]{appendix}
+\usepackage[authoryear]{natbib}
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+\usepackage[sc]{caption}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\newcommand{\changefont}{%
+    \fontsize{9}{11}\selectfont
+}
+\fancyhf{}
+\pagestyle{fancy}
+
+\fancyhead[L]{\changefont \slshape National Bat Conference 2014}
+\fancyhead[R]{\changefont \slshape How to get started with bat data analysis}
+\fancyfoot[R] {\changefont \slshape {\thepage}  of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\begin{document}
+
+
+
+
+\newpage
+\section*{How to get started with bat data analysis}
+
+\pagenumbering{arabic}
+
+
+\subsection*{Essentials from todays Workshop}
+
+Always plan bat surveys and design the survey to investigate something. Think about the data analysis before beginning the survey (i.e. the comparisons to make). For example pair up bat detectors placing two automatic detectors in separate locations (e.g. one next to a hedge and  the other in the middle of an open field).\\
+
+\noindent
+Use R  for data analysis \citep{R-Core}; at first it may be easier to manipulate data in a spreadsheet such as Microsoft Excel or OpenOffice; with practice it becomes quicker in R. Use R through RStudio\textsuperscript{\textregistered} they can be downloaded and installed from:
+
+\begin{itemize}
+  \item R from \url{http://cran.r-project.org/}
+  \item RStudio\textsuperscript{\textregistered} from \url{http://www.rstudio.com/products/rstudio/download/}
+\end{itemize}
+
+\noindent
+Why use R and RStudio\textsuperscript{\textregistered}?
+
+\begin{enumerate}
+  \item Both R and RStudio\textsuperscript{\textregistered} are open source software that run on Windows, (Mac) OS X and Linux.
+  \item R is a flexible statistical analysis toolkit with methods from the simple to the cutting edge; it produces excellent graphics and data visualization.
+  \item Work is readily  reproducible, documents can be dynamic and there is access to advanced version control.
+  \item R and RStudio\textsuperscript{\textregistered} have a large, active, and growing community of users. 
+\end{enumerate}
+
+\noindent
+The downside. The initial learning curve appears steep but persevere the rewards are high and the sources of information below will help to get started.
+
+\subsection*{Sources of information}
+
+There are excellent texts aimed at ecologists and biologists that provide an introduction to statistics \citep{Dytham2011, Fowler1998, Gardener2012}. \citep{Fowler1998} shows how to undertake data analysis using a hand calculator \citep{Dytham2011, Gardener2012} gives examples in R and Microsoft Excel.  More advanced statistical methods are described in \citep{Legendre2012, Zuur2007, Zuur2009, Borcard2011}. \citep{Borcard2011, Zuur2009} both give examples in R.\\
+
+\noindent
+Getting started with R can be achieved through the web; there are many Youtube\textsuperscript{TM} videos! The series uploaded by \emph{Gordon Anthony Davis} (18 plus 10 minute tutorials) provides a basic introduction to R and RStudio\textsuperscript{\textregistered}. The first is available from \url{http://www.youtube.com/watch?v=WJDrYUqNrHg}.\\ 
+
+\noindent
+Other web sources include manuals at \url{http://cran.r-project.org/} but also: Quick-R \url{http://www.statmethods.net/};\\ \url{http://www.rstudio.com/resources/training/online-learning/};\\  \url{http://www.revolutionanalytics.com/r-language-resources}; and,\\ \url{http://www.r-tutor.com/}.\\
+
+\noindent
+If stuck on how to do something in R, type the question into Google; the answer more often than not will appear! Particularly on sites such as \url{http://stackoverflow.com/}. \emph{I find this quicker than getting a book from the shelf and looking the question up}. There are many good books on R \citep{Crawley2013, Lander2013, Vries2012, Knell2014}\\
+
+\noindent
+Key information from the workshop including these two pages of notes, the source code of the examples shown and much more, is available at: \url{https://github.com/Nattereri/BatDataWorkshop2014} \emph{after the conference}. 
+
+%%%%%%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{abbrvnat}
+\bibliography{References.bib}
+
+
+
+\end{document}
