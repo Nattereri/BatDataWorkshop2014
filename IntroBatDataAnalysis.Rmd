@@ -29,13 +29,13 @@ The data analysis was undertaken in R, see [@R-core]. This document is in R Mark
 The R-script applied in the analysis is shown in shaded boxes as illustrated in the one below.  This shaded box shows the R-script to return the version of R used; the version number and date is printed below the shaded box. 
 
 ```{r}
-#Libraries used
-library(ggplot2)
-library(reshape2)
-library(RColorBrewer)
-library(knitr)
-library(vegan)
-library(nortest)
+#Libraries used (Packages)
+library(ggplot2) # Used for data visualisation (i.e barcharts)
+library(reshape2) # Manipulation of data frame
+library(RColorBrewer) # Colours in bar charts
+library(knitr) # Complies this dynamic report
+library(vegan) # For the ANOSIM test
+library(nortest) # Anderson-Darling test
 
 
 #R script to print the version of R used
